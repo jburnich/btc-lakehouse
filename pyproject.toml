@@ -10,12 +10,18 @@ dependencies = [
     "boto3>=1.43.17",
 ]
 
+[project.scripts]
+ingest = "cli:main"
+
 [dependency-groups]
 dev = [
     "ruff>=0.15.14",
     "pytest>=9.0.3",
     "black>=26.5.1",
 ]
+
+[tool.uv]
+package = true
 
 [tool.ruff]
 line-length = 100

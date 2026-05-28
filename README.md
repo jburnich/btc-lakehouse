@@ -19,3 +19,17 @@ cp .env.example .env
 ## Data source
 
 Bitcoin on-chain transaction data from the [AWS Public Blockchain dataset](https://registry.opendata.aws/aws-public-blockchain/), available as Parquet files on S3 (`s3://aws-public-blockchain/v1.0/btc/`).
+
+## Usage
+
+Download a daily BTC transaction partition:
+
+```bash
+uv run ingest 2026-01-01
+```
+
+## Tests
+
+```bash
+uv run pytest
+```
