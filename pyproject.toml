@@ -1,0 +1,19 @@
+[project]
+name = "btc-lakehouse"
+version = "0.1.0"
+description = "Bitcoin on-chain analytics pipeline"
+requires-python = ">=3.13"
+authors = [
+    { name = "Jordan Burnichon", email = "burnichonjordan@gmail.com" },
+]
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.14",
+    "pytest>=9.0.3",
+    "black>=26.5.1",
+]
+
+[tool.ruff]
+line-length = 100
