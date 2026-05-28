@@ -15,3 +15,7 @@ uv sync
 # Configure environment variables
 cp .env.example .env
 ```
+
+## Data source
+
+Bitcoin on-chain transaction data from the [AWS Public Blockchain dataset](https://registry.opendata.aws/aws-public-blockchain/), available as Parquet files on S3 (`s3://aws-public-blockchain/v1.0/btc/`).
