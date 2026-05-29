@@ -9,8 +9,8 @@ def main():
     args = parser.parse_args()
     try:
         path = fetch_partition(args.date)
-        print(f"Partition downloaded to {path}")
-    except ValueError as e:
+        print(f"Partition uploaded to {path}")
+    except (ValueError, EnvironmentError) as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 

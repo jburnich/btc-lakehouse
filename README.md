@@ -22,7 +22,7 @@ Bitcoin on-chain transaction data from the [AWS Public Blockchain dataset](https
 
 ## Usage
 
-Download a daily BTC transaction partition:
+Fetch a daily BTC transaction partition from the public dataset and upload it to S3:
 
 ```bash
 uv run ingest 2026-01-01
