@@ -29,7 +29,7 @@ def test_fetch_partition_uploads_to_s3(mock_s3):
     _, target_s3 = mock_s3
     result = fetch_partition("2026-01-01")
 
-    assert result == "s3://test-bucket/raw/btc/transactions/date=2026-01-01/"
+    assert result == "s3://test-bucket/raw/transactions/date=2026-01-01/"
     target_s3.upload_fileobj.assert_called_once()
 
 

@@ -8,10 +8,12 @@ authors = [
 ]
 dependencies = [
     "boto3>=1.43.17",
+    "pyspark>=4.1.2",
 ]
 
 [project.scripts]
-ingest = "cli:main"
+ingest = "cli.ingest:main"
+transform = "cli.transform:main"
 
 [dependency-groups]
 dev = [
