@@ -7,7 +7,7 @@ SOURCE_BUCKET = "aws-public-blockchain"
 SOURCE_PREFIX = "v1.0/btc/transactions"
 SOURCE_REGION = "us-east-2"
 
-TARGET_PREFIX = "raw/btc/transactions"
+TARGET_PREFIX = "raw/transactions"
 
 
 def fetch_partition(date: str) -> str:

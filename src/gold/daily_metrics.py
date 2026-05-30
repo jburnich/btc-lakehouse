@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql import functions as F
 
-TARGET_PREFIX = "gold/btc/daily_metrics"
+TARGET_PREFIX = "gold/daily_metrics"
 
 
 def run(spark: SparkSession, partition_path: str, target_bucket: str) -> str:
