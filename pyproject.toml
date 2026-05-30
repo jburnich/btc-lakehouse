@@ -12,7 +12,8 @@ dependencies = [
 ]
 
 [project.scripts]
-ingest = "cli:main"
+ingest = "cli.ingest:main"
+transform = "cli.transform:main"
 
 [dependency-groups]
 dev = [
