@@ -30,6 +30,35 @@ uv run ingest 2026-01-01
 uv run transform 2026-01-01
 ```
 
+## Infrastructure
+
+The infrastructure is managed with [Terraform](https://developer.hashicorp.com/terraform) >= 1.14. It provisions:
+- S3 bucket (raw + gold layers)
+- EMR Serverless application (Spark jobs)
+- Glue catalog database
+- IAM roles
+
+The Terraform state is stored in a private S3 backend. The backend bucket must be created manually beforehand and accessible (read + write) by your AWS user. Set `TF_BACKEND_BUCKET` in your `.env`.
+
+```bash
+source .env
+cd terraform
+terraform init -backend-config="bucket=$TF_BACKEND_BUCKET"
+terraform apply
+```
+
+After applying, retrieve the outputs and add them to your `.env`:
+
+```bash
+terraform output emr_application_id
+terraform output emr_execution_role_arn
+```
+
+```
+export EMR_APPLICATION_ID=<emr_application_id>
+export EMR_EXECUTION_ROLE_ARN=<emr_execution_role_arn>
+```
+
 ## Tests
 
 ```bash
