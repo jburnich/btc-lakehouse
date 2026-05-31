@@ -7,19 +7,23 @@ from pathlib import Path
 import boto3
 
 JOBS_PREFIX = "jobs"
-JOB_SCRIPT = Path(__file__).parents[1] / "emr_scripts" / "init_tables.py"
+JOB_SCRIPT = Path(__file__).parents[1] / "emr_scripts" / "sync_tables.py"
+CONF_FILE = Path(__file__).parents[1] / "tables.json"
 
 ICEBERG_CONFIGS = {
     "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
     "spark.sql.catalog.glue": "org.apache.iceberg.spark.SparkCatalog",
     "spark.sql.catalog.glue.catalog-impl": "org.apache.iceberg.aws.glue.GlueCatalog",
     "spark.sql.catalog.glue.io-impl": "org.apache.iceberg.io.ResolvingFileIO",
+    # DDL only — no executors needed
+    "spark.dynamicAllocation.enabled": "false",
+    "spark.executor.instances": "1",
 }
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Initialize Iceberg tables in Glue catalog"
+        description="Synchronize Iceberg tables with the Glue catalog"
     )
     parser.parse_args()
 
@@ -47,8 +51,9 @@ def main():
 
     try:
         s3 = boto3.client("s3", region_name=region)
-        key = f"{JOBS_PREFIX}/init_tables.py"
+        key = f"{JOBS_PREFIX}/sync_tables.py"
         s3.upload_file(str(JOB_SCRIPT), bucket, key)
+        s3.upload_file(str(CONF_FILE), bucket, "conf/tables.json")
 
         configs = {
             **ICEBERG_CONFIGS,
@@ -86,7 +91,7 @@ def main():
             time.sleep(10)
 
         if state == "SUCCESS":
-            print("Tables initialized successfully")
+            print("Tables synchronized successfully")
         else:
             print(
                 f"Error: job {state} — {job_run.get('stateDetails', '')}",

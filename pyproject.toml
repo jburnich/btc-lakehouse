@@ -14,7 +14,7 @@ dependencies = [
 [project.scripts]
 ingest = "cli.ingest:main"
 transform = "cli.transform:main"
-init-tables = "cli.init_tables:main"
+sync-tables = "cli.sync_tables:main"
 
 [dependency-groups]
 dev = [

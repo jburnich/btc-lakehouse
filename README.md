@@ -22,10 +22,10 @@ Bitcoin on-chain transaction data from the [AWS Public Blockchain dataset](https
 
 ## Setup
 
-After provisioning the infrastructure, initialize the Iceberg tables in the Glue catalog (one-time):
+After provisioning the infrastructure, synchronize the Iceberg tables with the Glue catalog. This command is idempotent. Re-run after any schema change in [src/tables.json](src/tables.json):
 
 ```bash
-uv run init-tables
+uv run sync-tables
 ```
 
 ## Usage
