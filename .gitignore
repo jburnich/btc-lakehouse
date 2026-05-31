@@ -1,6 +1,9 @@
 # Local data
 data/
 
+# Terraform
+.terraform/
+
 # Virtual environments
 .venv/
 venv/
