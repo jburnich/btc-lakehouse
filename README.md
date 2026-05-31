@@ -20,6 +20,14 @@ cp .env.example .env
 
 Bitcoin on-chain transaction data from the [AWS Public Blockchain dataset](https://registry.opendata.aws/aws-public-blockchain/), available as Parquet files on S3 (`s3://aws-public-blockchain/v1.0/btc/`).
 
+## Setup
+
+After provisioning the infrastructure, initialize the Iceberg tables in the Glue catalog (one-time):
+
+```bash
+uv run init-tables
+```
+
 ## Usage
 
 ```bash
