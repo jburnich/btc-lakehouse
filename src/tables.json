@@ -1,0 +1,26 @@
+{
+  "daily_metrics": {
+    "location": "gold/daily_metrics",
+    "partition_by": "date",
+    "columns": {
+      "total_transactions": "BIGINT",
+      "total_volume_btc": "DOUBLE",
+      "total_fees_btc": "DOUBLE",
+      "avg_fee_sat": "BIGINT",
+      "median_fee_sat": "BIGINT",
+      "date": "DATE"
+    }
+  },
+"address_stats": {
+    "location": "gold/address_stats",
+    "columns": {
+      "address": "STRING",
+      "total_received_btc": "DOUBLE",
+      "total_sent_btc": "DOUBLE",
+      "balance_btc": "DOUBLE",
+      "tx_count": "BIGINT",
+      "first_seen": "TIMESTAMP",
+      "last_seen": "TIMESTAMP"
+    }
+  }
+}
