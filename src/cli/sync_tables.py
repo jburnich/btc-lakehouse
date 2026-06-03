@@ -1,5 +1,4 @@
 import argparse
-import sys
 from pathlib import Path
 
 from cli.emr import ICEBERG_CONFIGS, get_env, upload, run_job
@@ -15,33 +14,25 @@ def main():
 
     bucket, region, app_id, role_arn = get_env()
 
-    try:
-        key = f"{JOBS_PREFIX}/sync_tables.py"
-        upload(bucket, region, (JOB_SCRIPT, key), (CONF_FILE, "conf/tables.json"))
+    key = f"{JOBS_PREFIX}/sync_tables.py"
+    upload(bucket, region, (JOB_SCRIPT, key), (CONF_FILE, "conf/tables.json"))
 
-        configs = {
-            **ICEBERG_CONFIGS,
-            "spark.sql.catalog.glue.warehouse": f"s3://{bucket}/gold/",
-            # DDL only — no executors needed
-            "spark.dynamicAllocation.enabled": "false",
-            "spark.executor.instances": "1",
-        }
+    configs = {
+        **ICEBERG_CONFIGS,
+        "spark.sql.catalog.glue.warehouse": f"s3://{bucket}/gold/",
+        # DDL only — no executors needed
+        "spark.dynamicAllocation.enabled": "false",
+        "spark.executor.instances": "1",
+    }
 
-        state, details = run_job(
-            bucket, region, app_id, role_arn,
-            entry_point=f"s3://{bucket}/{key}",
-            arguments=[bucket],
-            spark_configs=configs,
-        )
+    state, details = run_job(
+        bucket, region, app_id, role_arn,
+        entry_point=f"s3://{bucket}/{key}",
+        arguments=[bucket],
+        spark_configs=configs,
+    )
 
-        if state == "SUCCESS":
-            print("Tables synchronized successfully")
-        else:
-            msg = f"Error: job {state}"
-            if details:
-                msg += f" — {details}"
-            print(msg, file=sys.stderr)
-            sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    if state == "SUCCESS":
+        print("Tables synchronized successfully")
+    else:
+        raise RuntimeError(f"EMR job {state}: {details}")
