@@ -11,22 +11,35 @@ pull:
       requirements_file: requirements-prefect.txt
       stream_output: false
 
+definitions:
+  image: &image prefecthq/prefect:3-python3.13
+  # AWS_REGION_BTC avoids conflict with AWS_REGION forced by ECS Fargate
+  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-environment-variables.html
+  common_env: &common_env
+    AWS_REGION_BTC: "{{ prefect.variables.aws-region }}"
+    AWS_BUCKET_NAME: "{{ prefect.variables.aws-bucket-name }}"
+    AWS_ACCESS_KEY_ID: "{{ prefect.blocks.secret.aws-access-key-id.value }}"
+    AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.secret.aws-secret-access-key.value }}"
+
 deployments:
+  - name: ingest
+    entrypoint: src/flows.py:ingest_flow
+    schedules:
+      - cron: "0 12 * * *"
+        timezone: "UTC"
+    work_pool:
+      name: managed-execution
+      job_variables:
+        image: *image
+        env: *common_env
+
   - name: sync-tables
     entrypoint: src/flows.py:sync_tables_flow
     work_pool:
       name: managed-execution
       job_variables:
-        image: prefecthq/prefect:3-python3.13
+        image: *image
         env:
-          ## Variables
+          <<: *common_env
           EMR_APPLICATION_ID: "{{ prefect.variables.emr-application-id }}"
           EMR_EXECUTION_ROLE_ARN: "{{ prefect.variables.emr-execution-role-arn }}"
-          # AWS_REGION_BTC avoids conflict with AWS_REGION forced by ECS Fargate
-          # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-environment-variables.html
-          AWS_REGION_BTC: "{{ prefect.variables.aws-region }}"
-          AWS_BUCKET_NAME: "{{ prefect.variables.aws-bucket-name }}"
-
-          ## Secrets
-          AWS_ACCESS_KEY_ID: "{{ prefect.blocks.secret.aws-access-key-id.value }}"
-          AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.secret.aws-secret-access-key.value }}"
