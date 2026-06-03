@@ -5,7 +5,7 @@ pull:
   - prefect.deployments.steps.git_clone:
       id: clone-step
       repository: https://github.com/jburnich/btc-lakehouse.git
-      branch: feat/prefect
+      branch: main
   - prefect.deployments.steps.pip_install_requirements:
       directory: "{{ clone-step.directory }}"
       requirements_file: requirements-prefect.txt

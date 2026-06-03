@@ -6,10 +6,17 @@ on:
     paths:
       - prefect.yaml
       - src/flows.py
+      - pyproject.toml
+      - uv.lock
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +30,14 @@ jobs:
 
       - name: Generate requirements-prefect.txt
         run: uv export --no-dev --frozen --no-hashes --no-emit-project -o requirements-prefect.txt
+
+      - name: Commit requirements-prefect.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add requirements-prefect.txt
+          git diff --cached --quiet || git commit -m "update requirements-prefect.txt"
+          git push
 
       - name: Install Prefect
         run: pip install prefect
