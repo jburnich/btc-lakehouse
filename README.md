@@ -67,6 +67,27 @@ export EMR_APPLICATION_ID=<emr_application_id>
 export EMR_EXECUTION_ROLE_ARN=<emr_execution_role_arn>
 ```
 
+## Orchestration
+
+Flows are orchestrated with [Prefect Cloud](https://app.prefect.cloud) (free tier — 1 workspace, 5 deployments).
+
+### Prefect Cloud setup
+
+1. Create an account on [app.prefect.cloud](https://app.prefect.cloud)
+2. Create a **Managed** work pool named `managed-execution`
+3. Add the following variables in Prefect Cloud (**Settings → Variables**):
+   - `aws-bucket-name`, `aws-region`, `emr-application-id`, `emr-execution-role-arn`
+4. Add the following secrets (**Settings → Blocks → Secret**):
+   - `aws-access-key-id`, `aws-secret-access-key`
+
+### CI/CD
+
+Flows are automatically deployed to Prefect Cloud on every push to `main` when `prefect.yaml` or `src/flows.py` changes.
+
+Add the following secrets to your GitHub repository (**Settings → Secrets → Actions**):
+- `PREFECT_API_KEY`
+- `PREFECT_API_URL`
+
 ## Tests
 
 ```bash

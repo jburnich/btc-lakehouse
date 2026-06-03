@@ -1,0 +1,34 @@
+name: Deploy to Prefect Cloud
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - prefect.yaml
+      - src/flows.py
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Generate requirements-prefect.txt
+        run: uv export --no-dev --frozen --no-hashes --no-emit-project -o requirements-prefect.txt
+
+      - name: Install Prefect
+        run: pip install prefect
+
+      - name: Deploy flows
+        env:
+          PREFECT_API_KEY: ${{ secrets.PREFECT_API_KEY }}
+          PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
+        run: prefect deploy --all
