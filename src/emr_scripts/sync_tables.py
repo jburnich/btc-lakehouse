@@ -75,7 +75,7 @@ def sync_table(spark: SparkSession, table: str, config: dict, bucket: str) -> No
         if col not in existing:
             spark.sql(f"ALTER TABLE {DATABASE}.{table} ADD COLUMN {col} {dtype}")
 
-    for col in existing - expected:
+    for col in set(existing.keys()) - expected:
         spark.sql(f"ALTER TABLE {DATABASE}.{table} DROP COLUMN {col}")
 
 
