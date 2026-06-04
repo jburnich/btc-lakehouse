@@ -15,6 +15,7 @@ from pyiceberg.types import (
     NestedField,
     StringType,
     TimestampType,
+    TimestamptzType,
 )
 
 DATABASE = "btc_lakehouse"
@@ -26,6 +27,7 @@ TYPE_MAP = {
     "string": StringType(),
     "date": DateType(),
     "timestamp": TimestampType(),
+    "timestamptz": TimestamptzType(),
 }
 
 
@@ -80,6 +82,7 @@ def main():
             "type": "glue",
             "warehouse": f"s3://{bucket}/gold/",
             "region_name": region,
+            "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
         },
     )
 
