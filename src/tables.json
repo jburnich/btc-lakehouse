@@ -19,8 +19,8 @@
       "total_sent_btc": "DOUBLE",
       "balance_btc": "DOUBLE",
       "tx_count": "BIGINT",
-      "first_seen": "TIMESTAMP",
-      "last_seen": "TIMESTAMP"
+      "first_seen": "TIMESTAMPTZ",
+      "last_seen": "TIMESTAMPTZ"
     }
   }
 }
