@@ -1,38 +1,140 @@
-import argparse
+import json
+import os
+import sys
 from pathlib import Path
 
-from cli.emr import ICEBERG_CONFIGS, get_env, upload, run_job
+from pyiceberg.catalog import load_catalog
+from pyiceberg.exceptions import NamespaceAlreadyExistsError
+from pyiceberg.partitioning import PartitionField, PartitionSpec
+from pyiceberg.schema import Schema
+from pyiceberg.transforms import IdentityTransform
+from pyiceberg.types import (
+    DateType,
+    DoubleType,
+    LongType,
+    NestedField,
+    StringType,
+    TimestampType,
+)
 
-JOBS_PREFIX = "jobs"
-JOB_SCRIPT = Path(__file__).parents[1] / "emr_scripts" / "sync_tables.py"
-CONF_FILE = Path(__file__).parents[1] / "tables.json"
+DATABASE = "btc_lakehouse"
+TABLES_JSON = Path(__file__).parents[1] / "tables.json"
+
+TYPE_MAP = {
+    "bigint": LongType(),
+    "double": DoubleType(),
+    "string": StringType(),
+    "date": DateType(),
+    "timestamp": TimestampType(),
+}
+
+
+def sync_columns(table, columns: dict) -> None:
+    """Add new columns and drop removed ones to match the provided column config."""
+
+    existing = {field.name: field.field_type for field in table.schema().fields}
+    expected = set(columns.keys())
+
+    # Raise early if a column type has changed — requires a manual migration
+    type_conflicts = [
+        col
+        for col, dtype in columns.items()
+        if col in existing and existing[col] != TYPE_MAP[dtype.lower()]
+    ]
+    if type_conflicts:
+        raise RuntimeError(
+            f"Column type change in {table.name()} for: {', '.join(type_conflicts)}. "
+            "Type changes require a custom migration script."
+        )
+
+    # Add new columns and drop removed ones
+    to_add = [(col, dtype) for col, dtype in columns.items() if col not in existing]
+    to_drop = set(existing.keys()) - expected
+    if not to_add and not to_drop:
+        return
+
+    with table.update_schema() as update:
+        for col, dtype in to_add:
+            update.add_column(col, TYPE_MAP[dtype.lower()])
+        for col in to_drop:
+            update.delete_column(col)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Synchronize Iceberg tables with the Glue catalog")
-    parser.parse_args()
 
-    bucket, region, app_id, role_arn = get_env()
+    # Load AWS config from environment variables
+    bucket = os.environ.get("AWS_BUCKET_NAME")
+    if not bucket:
+        print("Error: missing environment variable AWS_BUCKET_NAME", file=sys.stderr)
+        sys.exit(1)
 
-    key = f"{JOBS_PREFIX}/sync_tables.py"
-    upload(bucket, region, (JOB_SCRIPT, key), (CONF_FILE, "conf/tables.json"))
+    region = os.environ.get("AWS_REGION_BTC")
+    if not region:
+        print("Error: missing environment variable AWS_REGION_BTC", file=sys.stderr)
+        sys.exit(1)
 
-    configs = {
-        **ICEBERG_CONFIGS,
-        "spark.sql.catalog.glue.warehouse": f"s3://{bucket}/gold/",
-        # DDL only — no executors needed
-        "spark.dynamicAllocation.enabled": "false",
-        "spark.executor.instances": "1",
-    }
-
-    state, details = run_job(
-        bucket, region, app_id, role_arn,
-        entry_point=f"s3://{bucket}/{key}",
-        arguments=[bucket],
-        spark_configs=configs,
+    # Connect to Glue Catalog and get existing tables
+    catalog = load_catalog(
+        "glue",
+        **{
+            "type": "glue",
+            "warehouse": f"s3://{bucket}/gold/",
+            "region_name": region,
+        },
     )
 
-    if state == "SUCCESS":
-        print("Tables synchronized successfully")
-    else:
-        raise RuntimeError(f"EMR job {state}: {details}")
+    # Create database if it doesn't exist
+    try:
+        catalog.create_namespace(DATABASE)
+    except NamespaceAlreadyExistsError:
+        pass
+
+    # Load table schema configuration
+    schema_config = json.loads(TABLES_JSON.read_text())
+    existing = {table_name for _, table_name in catalog.list_tables(DATABASE)}
+
+    # Sync tables based on configuration
+    for table_name, config in schema_config.items():
+        columns = config["columns"]
+        schema = Schema(
+            *(
+                NestedField(
+                    field_id=i + 1,
+                    name=col,
+                    field_type=TYPE_MAP[dtype.lower()],
+                    required=False,
+                )
+                for i, (col, dtype) in enumerate(columns.items())
+            )
+        )
+
+        partition_col = config.get("partition_by")
+        if partition_col:
+            source_id = schema.find_field(partition_col).field_id
+            partition_spec = PartitionSpec(
+                PartitionField(
+                    source_id=source_id,
+                    field_id=1000,
+                    transform=IdentityTransform(),
+                    name=partition_col,
+                )
+            )
+        else:
+            partition_spec = PartitionSpec()
+
+        if table_name not in existing:
+            catalog.create_table(
+                identifier=f"{DATABASE}.{table_name}",
+                schema=schema,
+                partition_spec=partition_spec,
+                location=f"s3://{bucket}/{config['location']}",
+            )
+            print(f"Created table {table_name}")
+        else:
+            sync_columns(catalog.load_table(f"{DATABASE}.{table_name}"), columns)
+
+    for table_name in existing - set(schema_config.keys()):
+        catalog.drop_table(f"{DATABASE}.{table_name}")
+        print(f"Dropped table {table_name}")
+
+    print("Tables synchronized successfully")
