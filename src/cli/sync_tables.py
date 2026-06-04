@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from pyiceberg.catalog import load_catalog
-from pyiceberg.exceptions import NamespaceAlreadyExistsError
+
 from pyiceberg.partitioning import PartitionField, PartitionSpec
 from pyiceberg.schema import Schema
 from pyiceberg.transforms import IdentityTransform
@@ -87,10 +87,9 @@ def main():
     )
 
     # Create database if it doesn't exist
-    try:
+    existing_namespaces = {ns[0] for ns in catalog.list_namespaces()}
+    if DATABASE not in existing_namespaces:
         catalog.create_namespace(DATABASE)
-    except NamespaceAlreadyExistsError:
-        pass
 
     # Load table schema configuration
     schema_config = json.loads(TABLES_JSON.read_text())
