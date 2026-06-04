@@ -185,6 +185,8 @@ py-key-value-aio==0.4.5
     # via pydocket
 py4j==0.10.9.9
     # via pyspark
+pyarrow==24.0.0
+    # via btc-lakehouse
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
 pydantic==2.13.4
