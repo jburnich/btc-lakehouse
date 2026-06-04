@@ -20,6 +20,10 @@ definitions:
     AWS_BUCKET_NAME: "{{ prefect.variables.aws-bucket-name }}"
     AWS_ACCESS_KEY_ID: "{{ prefect.blocks.secret.aws-access-key-id.value }}"
     AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.secret.aws-secret-access-key.value }}"
+  emr_env: &emr_env
+    <<: *common_env
+    EMR_APPLICATION_ID: "{{ prefect.variables.emr-application-id }}"
+    EMR_EXECUTION_ROLE_ARN: "{{ prefect.variables.emr-execution-role-arn }}"
 
 deployments:
   - name: pipeline
@@ -31,7 +35,7 @@ deployments:
       name: managed-execution
       job_variables:
         image: *image
-        env: *common_env
+        env: *emr_env
 
   - name: sync-tables
     entrypoint: src/flows.py:sync_tables_flow

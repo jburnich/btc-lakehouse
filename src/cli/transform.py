@@ -1,29 +1,46 @@
 import argparse
-import os
 import sys
-from pyspark.errors import AnalysisException
-from spark_session import create_session
-from gold.daily_metrics import run as run_daily_metrics
+from pathlib import Path
 
-RAW_PREFIX = "raw/transactions"
+from cli.emr import ICEBERG_CONFIGS, get_env, upload, run_job
+
+JOBS_PREFIX = "jobs"
+JOB_SCRIPT = Path(__file__).parents[1] / "emr_scripts" / "transform.py"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compute gold metrics from a raw BTC partition")
+    parser = argparse.ArgumentParser(description="Submit BTC transform job to EMR Serverless")
     parser.add_argument("date", help="Partition date (YYYY-MM-DD)")
     args = parser.parse_args()
+
+    bucket, region, app_id, role_arn = get_env()
+
     try:
-        bucket = os.environ.get("AWS_BUCKET_NAME")
-        if not bucket:
-            raise EnvironmentError("AWS_BUCKET_NAME is not set")
-        spark = create_session()
-        partition_path = f"s3a://{bucket}/{RAW_PREFIX}/date={args.date}/"
-        output = run_daily_metrics(spark, partition_path, bucket)
-        print(f"daily_metrics written to {output}")
-        spark.stop()
-    except AnalysisException as e:
-        print(f"Error: partition not found — run ingest {args.date} first", file=sys.stderr)
-        sys.exit(1)
-    except (ValueError, EnvironmentError) as e:
+        key = f"{JOBS_PREFIX}/transform.py"
+        upload(bucket, region, (JOB_SCRIPT, key))
+
+        configs = {
+            **ICEBERG_CONFIGS,
+            "spark.dynamicAllocation.executorIdleTimeout": "300s",
+            "spark.sql.catalog.glue.warehouse": f"s3://{bucket}/gold/",
+        }
+
+        state, details = run_job(
+            bucket, region, app_id, role_arn,
+            entry_point=f"s3://{bucket}/{key}",
+            arguments=[args.date, bucket],
+            spark_configs=configs,
+            submit_params="--conf spark.sql.parquet.enableVectorizedReader=false",
+        )
+
+        if state == "SUCCESS":
+            print(f"Transform complete for {args.date}")
+        else:
+            msg = f"Error: job {state}"
+            if details:
+                msg += f" — {details}"
+            print(msg, file=sys.stderr)
+            sys.exit(1)
+    except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
