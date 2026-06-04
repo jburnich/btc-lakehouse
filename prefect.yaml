@@ -22,8 +22,8 @@ definitions:
     AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.secret.aws-secret-access-key.value }}"
 
 deployments:
-  - name: ingest
-    entrypoint: src/flows.py:ingest_flow
+  - name: pipeline
+    entrypoint: src/flows.py:pipeline_flow
     schedules:
       - cron: "0 12 * * *"
         timezone: "UTC"

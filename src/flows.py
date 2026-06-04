@@ -31,16 +31,6 @@ def sync_tables_flow() -> None:
 
 
 @flow(log_prints=True)
-def ingest_flow(date_str: str = str(date.today() - timedelta(days=1))) -> None:
-    ingest(date_str)
-
-
-@flow(log_prints=True)
-def transform_flow(date_str: str = str(date.today() - timedelta(days=1))) -> None:
-    transform(date_str)
-
-
-@flow(log_prints=True)
 def pipeline_flow(date_str: str = str(date.today() - timedelta(days=1))) -> None:
     raw = ingest(date_str)
     transform(date_str, wait_for=[raw])
