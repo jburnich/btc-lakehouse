@@ -26,17 +26,21 @@ def fetch_partition(date: str) -> str:
     target_s3 = boto3.client("s3", region_name=target_region)
 
     prefix = f"{SOURCE_PREFIX}/date={date}/"
+    print(f"Listing objects at s3://{SOURCE_BUCKET}/{prefix}")
     response = source_s3.list_objects_v2(Bucket=SOURCE_BUCKET, Prefix=prefix)
 
     if "Contents" not in response:
         raise ValueError(f"No data found for date={date}")
 
+    files = response["Contents"]
     target_prefix = f"{TARGET_PREFIX}/date={date}"
+    print(f"Uploading {len(files)} file(s) to s3://{target_bucket}/{target_prefix}/")
 
-    for obj in response["Contents"]:
+    for i, obj in enumerate(files, 1):
         key = obj["Key"]
         target_key = f"{target_prefix}/{key.split('/')[-1]}"
         body = source_s3.get_object(Bucket=SOURCE_BUCKET, Key=key)["Body"]
         target_s3.upload_fileobj(body, target_bucket, target_key)
+        print(f"  [{i}/{len(files)}] {key.split('/')[-1]}")
 
     return f"s3://{target_bucket}/{target_prefix}/"

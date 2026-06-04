@@ -37,7 +37,6 @@ def sync_columns(table, columns: dict) -> None:
     existing = {field.name: field.field_type for field in table.schema().fields}
     expected = set(columns.keys())
 
-    # Raise early if a column type has changed — requires a manual migration
     type_conflicts = [
         col
         for col, dtype in columns.items()
@@ -49,10 +48,11 @@ def sync_columns(table, columns: dict) -> None:
             "Type changes require a custom migration script."
         )
 
-    # Add new columns and drop removed ones
     to_add = [(col, dtype) for col, dtype in columns.items() if col not in existing]
     to_drop = set(existing.keys()) - expected
+
     if not to_add and not to_drop:
+        print(f"  {table.name()[-1]}: {len(existing)} columns — no changes")
         return
 
     with table.update_schema() as update:
@@ -60,6 +60,13 @@ def sync_columns(table, columns: dict) -> None:
             update.add_column(col, TYPE_MAP[dtype.lower()])
         for col in to_drop:
             update.delete_column(col)
+
+    changes = []
+    if to_add:
+        changes.append(f"+{len(to_add)} columns ({', '.join(c for c, _ in to_add)})")
+    if to_drop:
+        changes.append(f"-{len(to_drop)} columns ({', '.join(to_drop)})")
+    print(f"  {table.name()[-1]}: {len(existing)} columns — {', '.join(changes)}")
 
 
 def main():
@@ -131,12 +138,13 @@ def main():
                 partition_spec=partition_spec,
                 location=f"s3://{bucket}/{config['location']}",
             )
-            print(f"Created table {table_name}")
+            print(f"  {table_name}: created ({len(columns)} columns)")
         else:
             sync_columns(catalog.load_table(f"{DATABASE}.{table_name}"), columns)
 
-    for table_name in existing - set(schema_config.keys()):
+    dropped = existing - set(schema_config.keys())
+    for table_name in dropped:
         catalog.drop_table(f"{DATABASE}.{table_name}")
-        print(f"Dropped table {table_name}")
+        print(f"  {table_name}: dropped")
 
-    print("Tables synchronized successfully")
+    print(f"Synced {len(schema_config)} tables ({len(dropped)} dropped)")

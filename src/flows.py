@@ -7,12 +7,12 @@ from cli.sync_tables import main as sync_tables_main
 from cli.ingest import main as _ingest_main
 
 
-@task
+@task(log_prints=True)
 def sync_tables() -> None:
     sync_tables_main()
 
 
-@task
+@task(log_prints=True)
 def ingest(date_str: str) -> None:
     sys.argv = ["ingest", date_str]
     _ingest_main()
