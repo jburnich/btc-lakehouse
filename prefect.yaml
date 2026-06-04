@@ -39,7 +39,4 @@ deployments:
       name: managed-execution
       job_variables:
         image: *image
-        env:
-          <<: *common_env
-          EMR_APPLICATION_ID: "{{ prefect.variables.emr-application-id }}"
-          EMR_EXECUTION_ROLE_ARN: "{{ prefect.variables.emr-execution-role-arn }}"
+        env: *common_env
