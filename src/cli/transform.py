@@ -9,8 +9,16 @@ JOB_SCRIPT = Path(__file__).parents[1] / "emr_scripts" / "transform.py"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Submit BTC transform job to EMR Serverless")
+    parser = argparse.ArgumentParser(
+        description="Submit BTC transform job to EMR Serverless"
+    )
     parser.add_argument("date", help="Partition date (YYYY-MM-DD)")
+    parser.add_argument(
+        "--job",
+        default="all",
+        choices=["all", "daily_metrics", "address_stats"],
+        help="Which job to run (default: all)",
+    )
     args = parser.parse_args()
 
     bucket, region, app_id, role_arn = get_env()
@@ -26,9 +34,12 @@ def main():
         }
 
         state, details = run_job(
-            bucket, region, app_id, role_arn,
+            bucket,
+            region,
+            app_id,
+            role_arn,
             entry_point=f"s3://{bucket}/{key}",
-            arguments=[args.date, bucket],
+            arguments=[args.date, bucket, args.job],
             spark_configs=configs,
             submit_params="--conf spark.sql.parquet.enableVectorizedReader=false",
         )
