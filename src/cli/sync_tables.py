@@ -7,7 +7,7 @@ from pyiceberg.catalog import load_catalog
 
 from pyiceberg.partitioning import PartitionField, PartitionSpec
 from pyiceberg.schema import Schema
-from pyiceberg.transforms import IdentityTransform
+from pyiceberg.transforms import BucketTransform, IdentityTransform
 from pyiceberg.types import (
     DateType,
     DoubleType,
@@ -117,15 +117,26 @@ def main():
             )
         )
 
-        partition_col = config.get("partition_by")
-        if partition_col:
-            source_id = schema.find_field(partition_col).field_id
+        partition_cfg = config.get("partition_by")
+        if isinstance(partition_cfg, str):
+            source_id = schema.find_field(partition_cfg).field_id
             partition_spec = PartitionSpec(
                 PartitionField(
                     source_id=source_id,
                     field_id=1000,
                     transform=IdentityTransform(),
-                    name=partition_col,
+                    name=partition_cfg,
+                )
+            )
+        elif isinstance(partition_cfg, dict) and partition_cfg.get("type") == "bucket":
+            col = partition_cfg["column"]
+            source_id = schema.find_field(col).field_id
+            partition_spec = PartitionSpec(
+                PartitionField(
+                    source_id=source_id,
+                    field_id=1000,
+                    transform=BucketTransform(num_buckets=partition_cfg["n"]),
+                    name=f"{col}_bucket",
                 )
             )
         else:
