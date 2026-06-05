@@ -28,6 +28,7 @@ definitions:
 deployments:
   - name: pipeline
     entrypoint: src/flows.py:pipeline_flow
+    concurrency_limit: 2
     schedules:
       - cron: "0 12 * * *"
         timezone: "UTC"

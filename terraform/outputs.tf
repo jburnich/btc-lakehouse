@@ -5,3 +5,7 @@ output "emr_application_id" {
 output "emr_execution_role_arn" {
   value = aws_iam_role.emr_execution.arn
 }
+
+output "athena_workgroup" {
+  value = aws_athena_workgroup.main.name
+}

@@ -6,3 +6,8 @@ variable "bucket_name" {
 variable "aws_region" {
   type = string
 }
+
+variable "athena_workgroup" {
+  description = "Athena workgroup name"
+  type        = string
+}

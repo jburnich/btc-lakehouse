@@ -1,5 +1,6 @@
 # btc-lakehouse
-End-to-end Bitcoin analytics platform
+
+End-to-end Bitcoin on-chain analytics pipeline — from raw S3 ingestion to a Streamlit dashboard.
 
 ## Installation
 
@@ -87,6 +88,14 @@ Flows are automatically deployed to Prefect Cloud on every push to `main` when `
 Add the following secrets to your GitHub repository (**Settings → Secrets → Actions**):
 - `PREFECT_API_KEY`
 - `PREFECT_API_URL`
+
+## Dashboard
+
+```bash
+streamlit run app.py
+```
+
+Displays daily Bitcoin network metrics (transactions, volume, fees) queried from Athena.
 
 ## Tests
 
