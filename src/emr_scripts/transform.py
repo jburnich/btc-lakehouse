@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime, timezone
 from pyspark.sql import SparkSession, functions as F
 
 
@@ -95,6 +96,15 @@ def run_address_stats(spark: SparkSession, date: str, bucket: str) -> None:
             first_seen         = least(t.first_seen, d.first_seen),
             last_seen          = greatest(t.last_seen, d.last_seen)
         WHEN NOT MATCHED THEN INSERT *
+    """)
+
+    now_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    spark.sql(f"""
+        CALL glue.system.expire_snapshots(
+            table => 'btc_lakehouse.address_stats',
+            older_than => TIMESTAMP '{now_ts}',
+            retain_last => 1
+        )
     """)
 
 

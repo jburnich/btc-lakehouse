@@ -1,3 +1,4 @@
+import gzip
 import os
 import sys
 import time
@@ -102,13 +103,17 @@ def run_job(
 
 def _fetch_driver_logs(bucket: str, region: str, app_id: str, job_id: str) -> str:
     """Download driver stderr from S3 logs after a failed EMR job."""
-    import gzip
+
     key = f"emr-logs/applications/{app_id}/jobs/{job_id}/SPARK_DRIVER/stderr.gz"
     try:
         s3 = _boto_client("s3", region)
         obj = s3.get_object(Bucket=bucket, Key=key)
         logs = gzip.decompress(obj["Body"].read()).decode("utf-8", errors="replace")
-        lines = [l for l in logs.splitlines() if "ERROR" in l or "Traceback" in l or "Exception" in l or "Error" in l]
+        lines = [
+            l
+            for l in logs.splitlines()
+            if "ERROR" in l or "Traceback" in l or "Exception" in l or "Error" in l
+        ]
         return "\n" + "\n".join(lines[-20:]) if lines else ""
     except Exception:
         return ""
