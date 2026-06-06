@@ -35,8 +35,12 @@ uv run sync-tables
 # Fetch a daily BTC partition and upload it to S3
 uv run ingest 2026-01-01
 
-# Compute gold metrics from the raw partition
+# Compute all gold metrics from the raw partition (daily_metrics + address_stats)
 uv run transform 2026-01-01
+
+# Compute a specific job only
+uv run transform 2026-01-01 --job daily_metrics
+uv run transform 2026-01-01 --job address_stats
 ```
 
 ## Infrastructure

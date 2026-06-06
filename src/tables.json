@@ -13,6 +13,7 @@
   },
 "address_stats": {
     "location": "gold/address_stats",
+    "partition_by": {"type": "bucket", "column": "address", "n": 256},
     "columns": {
       "address": "STRING",
       "total_received_btc": "DOUBLE",
