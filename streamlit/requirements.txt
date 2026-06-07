@@ -1,0 +1,4 @@
+streamlit==1.58.0
+boto3==1.43.17
+pandas==3.0.3
+python-dotenv==1.2.2
