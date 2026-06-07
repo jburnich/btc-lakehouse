@@ -9,3 +9,13 @@ output "emr_execution_role_arn" {
 output "athena_workgroup" {
   value = aws_athena_workgroup.main.name
 }
+
+output "streamlit_access_key_id" {
+  value     = aws_iam_access_key.streamlit.id
+  sensitive = true
+}
+
+output "streamlit_secret_access_key" {
+  value     = aws_iam_access_key.streamlit.secret
+  sensitive = true
+}
