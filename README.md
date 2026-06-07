@@ -14,6 +14,8 @@ graph LR
         A["AWS Public Blockchain\nOpen dataset on S3"]
     end
 
+    IN["Ingest\nPython CLI"]
+
     subgraph aws["AWS · eu-west-1"]
         B["S3\nBronze layer · Parquet"]
         C["EMR Serverless\nApache Spark"]
@@ -22,19 +24,19 @@ graph LR
         F["Amazon Athena"]
     end
 
-    subgraph platform["Platform"]
-        G["Prefect Cloud\nOrchestration"]
-        H["Streamlit Community Cloud\nPublic dashboard"]
-    end
+    G["Prefect Cloud\nOrchestration"]
+    H["Streamlit Community Cloud\nPublic dashboard"]
 
-    A -->|daily partition| B
+    A -->|daily partition| IN
+    IN --> B
     B --> C
     C -->|write Iceberg| D
     C -->|register tables| E
-    E --> F
     D --> F
+    E --> F
     F -->|SQL| H
-    G -.->|schedule & monitor| C
+    G -.->|schedule| IN
+    G -.->|schedule| C
 ```
 
 The pipeline runs daily:
