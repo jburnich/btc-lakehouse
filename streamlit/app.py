@@ -110,7 +110,7 @@ def line_chart(data: pd.DataFrame, column: str, y_title: str) -> None:
                 "y": {"field": column, "type": "quantitative", "title": y_title},
             },
         },
-        use_container_width=True,
+        width="stretch",
     )
 
 
@@ -174,7 +174,7 @@ with tab_metrics:
             "median_fee_sat": "Frais médian (satoshis)",
         }
     )
-    st.dataframe(display, use_container_width=True, hide_index=True)
+    st.dataframe(display, width="stretch", hide_index=True)
 
     chart_df = filtered.set_index("date")
 
@@ -226,7 +226,7 @@ with tab_metrics:
 
     st.dataframe(
         corr.style.apply(_style_corr, axis=None).format("{:.2f}"),
-        use_container_width=True,
+        width="stretch",
     )
 
 # Tab 2: Address lookup
@@ -297,4 +297,4 @@ with tab_address:
             "last_seen": "Dernière activité",
         }
     )
-    st.dataframe(display_top, use_container_width=True, hide_index=True)
+    st.dataframe(display_top, width="stretch", hide_index=True)
