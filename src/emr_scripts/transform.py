@@ -1,22 +1,18 @@
 import sys
 from datetime import datetime, timezone
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession, DataFrame, functions as F
 
 
 def get_spark() -> SparkSession:
-    """Initialize and return a SparkSession."""
-
     return SparkSession.builder.appName("btc-lakehouse").getOrCreate()
 
 
-def run_daily_metrics(spark: SparkSession, date: str, bucket: str) -> None:
-    """Compute daily metrics for a given date and write to Glue catalog."""
+def compute_daily_metrics(df: DataFrame) -> DataFrame:
+    """Aggregate transactions by day: count, volume, fees, avg/median fee in satoshis."""
 
-    df = spark.read.parquet(f"s3://{bucket}/raw/transactions/date={date}/")
     txs = df.filter(~F.col("is_coinbase"))
 
-    # Note: 1 BTC = 1e8 satoshis
-    daily = txs.groupBy(F.to_date("block_timestamp").alias("date")).agg(
+    return txs.groupBy(F.to_date("block_timestamp").alias("date")).agg(
         F.count("txid").alias("total_transactions"),
         F.round(F.sum("output_value"), 8).alias("total_volume_btc"),
         F.round(F.sum("fee"), 8).alias("total_fees_btc"),
@@ -26,7 +22,43 @@ def run_daily_metrics(spark: SparkSession, date: str, bucket: str) -> None:
         .alias("median_fee_sat"),
     )
 
-    daily.writeTo("glue.btc_lakehouse.daily_metrics").overwritePartitions()
+
+def compute_address_delta(received: DataFrame, sent: DataFrame) -> DataFrame:
+    """Join received/sent aggregates per address and compute balance and tx_count."""
+
+    received_agg = received.groupBy("address").agg(
+        F.round(F.sum("value_btc"), 8).alias("total_received_btc"),
+        F.count("*").alias("received_count"),
+        F.min("block_timestamp").alias("first_seen"),
+        F.max("block_timestamp").alias("last_seen"),
+    )
+    sent_agg = sent.groupBy("address").agg(
+        F.round(F.sum("value_btc"), 8).alias("total_sent_btc"),
+        F.count("*").alias("sent_count"),
+    )
+    return (
+        received_agg.join(sent_agg, on="address", how="full_outer")
+        .withColumn("total_received_btc", F.coalesce("total_received_btc", F.lit(0.0)))
+        .withColumn("total_sent_btc", F.coalesce("total_sent_btc", F.lit(0.0)))
+        .withColumn(
+            "balance_btc",
+            F.round(F.col("total_received_btc") - F.col("total_sent_btc"), 8),
+        )
+        .withColumn(
+            "tx_count",
+            F.coalesce("received_count", F.lit(0)) + F.coalesce("sent_count", F.lit(0)),
+        )
+        .drop("received_count", "sent_count")
+    )
+
+
+def run_daily_metrics(spark: SparkSession, date: str, bucket: str) -> None:
+    """Compute daily metrics for a given date and write to Glue catalog."""
+
+    df = spark.read.parquet(f"s3://{bucket}/raw/transactions/date={date}/")
+    compute_daily_metrics(df).writeTo(
+        "glue.btc_lakehouse.daily_metrics"
+    ).overwritePartitions()
 
 
 def run_address_stats(spark: SparkSession, date: str, bucket: str) -> None:
@@ -55,33 +87,7 @@ def run_address_stats(spark: SparkSession, date: str, bucket: str) -> None:
         .filter(F.col("address").isNotNull())
     )
 
-    received_agg = received.groupBy("address").agg(
-        F.round(F.sum("value_btc"), 8).alias("total_received_btc"),
-        F.count("*").alias("received_count"),
-        F.min("block_timestamp").alias("first_seen"),
-        F.max("block_timestamp").alias("last_seen"),
-    )
-
-    sent_agg = sent.groupBy("address").agg(
-        F.round(F.sum("value_btc"), 8).alias("total_sent_btc"),
-        F.count("*").alias("sent_count"),
-    )
-
-    delta = (
-        received_agg.join(sent_agg, on="address", how="full_outer")
-        .withColumn("total_received_btc", F.coalesce("total_received_btc", F.lit(0.0)))
-        .withColumn("total_sent_btc", F.coalesce("total_sent_btc", F.lit(0.0)))
-        .withColumn(
-            "balance_btc",
-            F.round(F.col("total_received_btc") - F.col("total_sent_btc"), 8),
-        )
-        .withColumn(
-            "tx_count",
-            F.coalesce("received_count", F.lit(0)) + F.coalesce("sent_count", F.lit(0)),
-        )
-        .drop("received_count", "sent_count")
-    )
-
+    delta = compute_address_delta(received, sent)
     delta.createOrReplaceTempView("delta")
 
     spark.sql("""
