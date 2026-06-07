@@ -7,10 +7,14 @@ def main():
     parser = argparse.ArgumentParser(prog="btc")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    ingest_parser = subparsers.add_parser("ingest", help="Upload a raw BTC partition to S3")
+    ingest_parser = subparsers.add_parser(
+        "ingest", help="Upload a raw BTC partition to S3"
+    )
     ingest_parser.add_argument("date", help="Partition date (YYYY-MM-DD)")
 
-    transform_parser = subparsers.add_parser("transform", help="Compute gold metrics from raw partition")
+    transform_parser = subparsers.add_parser(
+        "transform", help="Compute gold metrics from raw partition"
+    )
     transform_parser.add_argument("date", help="Partition date (YYYY-MM-DD)")
 
     args = parser.parse_args()

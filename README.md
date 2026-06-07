@@ -95,11 +95,26 @@ Add the following secrets to your GitHub repository (**Settings → Secrets → 
 
 ## Dashboard
 
+The dashboard is deployed publicly at **https://btc-lakehouse.streamlit.app/**
+
+It exposes two tabs:
+- **Métriques journalières** — daily transactions, volume, and fees with a date range filter and correlation matrix
+- **Recherche d'adresse** — lookup any Bitcoin address by its full address, plus a top 50 ranking by balance, received, sent, or transaction count
+
+### Run locally
+
 ```bash
-streamlit run app.py
+streamlit run streamlit/app.py
 ```
 
-Displays daily Bitcoin network metrics (transactions, volume, fees) queried from Athena.
+Requires the following environment variables (see `.env.example`):
+
+```
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+ATHENA_WORKGROUP
+```
 
 ## Tests
 
